@@ -6,7 +6,7 @@ const login = async (req, res) => {
     try {
         const user = await User.findOne({ where: { email } });
         if (!user || user.password !== password) { // Simple check, use bcrypt in production
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ message: 'Incorrect email address or password' });
         }
 
         const token = jwt.sign(
@@ -48,4 +48,19 @@ const getUsers = async (req, res) => {
     }
 };
 
-module.exports = { login, register, getUsers };
+const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    try {
+        // In a real application, you would generate a reset token, save it to the user record,
+        // and send an email with a link like /reset-password?token=XYZ.
+        // For this prototype, we'll just simulate it.
+        const user = await User.findOne({ where: { email } });
+
+        // We always return a success message for security (prevent email enumeration)
+        res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error processing request', error: error.message });
+    }
+}
+
+module.exports = { login, register, getUsers, forgotPassword };

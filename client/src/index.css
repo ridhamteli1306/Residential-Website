@@ -36,3 +36,125 @@ ul {
   margin: 0 auto;
   padding: 2rem;
 }
+
+.service-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+}
+
+/* Responsive Grid Utilities */
+.responsive-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+}
+
+.responsive-grid-2-asym {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 3rem;
+}
+
+/* Navbar styles */
+.navbar {
+  padding: 1rem 2rem;
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.navbar .nav-logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.menu-icon {
+  display: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.menu-overlay {
+  display: none;
+  /* Hide overlay on desktop */
+}
+
+@media (max-width: 768px) {
+
+  .responsive-grid-2,
+  .responsive-grid-2-asym {
+    grid-template-columns: 1fr;
+  }
+
+  .navbar {
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .nav-links {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 250px;
+    height: 100vh;
+    background-color: var(--primary-color);
+    flex-direction: column;
+    padding: 5rem 2rem 2rem;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    z-index: 1000;
+    align-items: flex-start;
+  }
+
+  .nav-links.active {
+    transform: translateX(0);
+  }
+
+  .menu-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.6);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .menu-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Adjust menu icon z-index to stay above the sliding menu if needed, or keeping it as is works if the menu padding pushes links down */
+  .menu-icon {
+    display: block;
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1001;
+    /* Ensure icon is above the menu */
+  }
+}

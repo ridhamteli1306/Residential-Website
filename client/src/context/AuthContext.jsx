@@ -26,7 +26,27 @@ export const AuthProvider = ({ children }) => {
             return { success: true };
         } catch (error) {
             console.error('Login failed', error);
-            return { success: false, message: error.response?.data?.message || 'Login failed' };
+            return { success: false, message: error.response?.data?.message || 'Incorrect email address or password' };
+        }
+    };
+
+    const register = async (userData) => {
+        try {
+            const response = await api.post('/auth/register', userData);
+            return { success: true, message: response.data.message };
+        } catch (error) {
+            console.error('Registration failed', error);
+            return { success: false, message: error.response?.data?.message || 'Registration failed' };
+        }
+    };
+
+    const forgotPassword = async (email) => {
+        try {
+            const response = await api.post('/auth/forgot-password', { email });
+            return { success: true, message: response.data.message };
+        } catch (error) {
+            console.error('Forgot password failed', error);
+            return { success: false, message: error.response?.data?.message || 'Failed to process request' };
         }
     };
 
@@ -37,7 +57,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, register, forgotPassword, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );
