@@ -2,6 +2,7 @@ const sequelize = require('./db');
 const User = require('./models/User');
 const Unit = require('./models/Unit');
 const Visit = require('./models/Visit');
+const Incident = require('./models/Incident');
 
 // Associations
 User.hasMany(Unit, { foreignKey: 'ownerId' });
@@ -13,4 +14,7 @@ Visit.belongsTo(Unit, { foreignKey: 'unitId' });
 User.hasMany(Visit, { foreignKey: 'hostId', as: 'hostedVisits' }); // Resident hosting the visitor
 Visit.belongsTo(User, { foreignKey: 'hostId', as: 'host' });
 
-module.exports = { sequelize, User, Unit, Visit };
+User.hasMany(Incident, { foreignKey: 'reporterId', as: 'reportedIncidents' });
+Incident.belongsTo(User, { foreignKey: 'reporterId', as: 'reporter' });
+
+module.exports = { sequelize, User, Unit, Visit, Incident };

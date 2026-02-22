@@ -49,7 +49,7 @@ const ManagerDashboard = () => {
             </div>
 
             <div style={{ marginTop: '2rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-                <h3>Staff Management</h3>
+                <h3>People Management</h3>
                 <p>Register new Watchmen, Residents, or Managers.</p>
                 <AddUserForm />
             </div>

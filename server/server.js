@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3001;
 const authRoutes = require('./routes/authRoutes');
 const unitRoutes = require('./routes/unitRoutes');
 const visitRoutes = require('./routes/visitRoutes');
+const incidentRoutes = require('./routes/incidentRoutes');
 
 app.use(cors());
 app.use(express.json());
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/units', unitRoutes);
 app.use('/api/visits', visitRoutes);
+app.use('/api/incidents', incidentRoutes);
 
 // Routes placeholder
 app.get('/', (req, res) => {

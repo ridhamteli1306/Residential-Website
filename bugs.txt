@@ -7,3 +7,24 @@ This file keeps track of all bugs and issues encountered during the development 
 - **Cause:** The "Request Booking" buttons on the individual service pages and homepage were using standard HTML `<a>` tags instead of React Router's `<Link>` components. This caused a full page reload when navigating, breaking the Single Page Application (SPA) state and detaching React event listeners when the browser loaded the previous page from the `bfcache` (Back-Forward Cache).
 - **Resolution:** Replaced all `<a href="...">` anchor tags with React Router `<Link to="...">` components across all service pages (`CommunityCenter.jsx`, `Landscaping.jsx`, `ResortPool.jsx`, `SportsFacilities.jsx`) and the `Home.jsx` page. This ensures all navigation is actively handled by React within the DOM, preserving state perfectly when the Back button is used.
 - **Status:** Fixed
+
+## 2. Login API Connection Failure
+- **Date:** 2026-02-22
+- **Issue:** Unable to log in using valid credentials (`manager@terrazas.com` / `managerpassword`) on the frontend `Login.jsx` page. The Axios request to `/api/auth/login` would fail.
+- **Cause:** The backend Node.js Express server (`server.js`) was not running in the background. Because the server wasn't active on port 3001, the React frontend could not establish a connection to verify the credentials against the SQLite database. 
+- **Resolution:** Started the backend server process (`node server.js` inside the `server` directory) so it listens for incoming API requests on port 3001. 
+- **Status:** Fixed
+
+## 3. Frontend Site Unreachable
+- **Date:** 2026-02-22
+- **Issue:** After refreshing `http://localhost:5173/`, the browser displayed a "site can't be reached" error.
+- **Cause:** The Vite React development server process had crashed or been stopped in the background. Without this local development server running, the browser cannot load the React application.
+- **Resolution:** Manually restarted the frontend development server by running `npm run dev` inside the `client` directory.
+- **Status:** Fixed
+
+## 4. SQLite Database Locking During Seed
+- **Date:** 2026-02-22
+- **Issue:** Attempted to log in using a newly seeded Watchman account (`security@terrazas.com`), but received an "incorrect email or password" error.
+- **Cause:** The `node seed.js` script was executed while the main `server.js` Express server was actively running and holding an open connection cache to the SQLite database. While the script ran successfully, the active backend server did not pick up the newly seeded data.
+- **Resolution:** Force-stopped all running Node processes, ran the seed script cleanly on an unlocked database, and then restarted both the backend and frontend servers `Stop-Process -Name node -Force; node seed.js; node server.js`.
+- **Status:** Fixed

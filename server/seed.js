@@ -35,6 +35,14 @@ async function seed() {
             { number: 'C-302', type: 'cabin', block: 'C' }
         ]);
 
+        // Create a Security Guard (Watchman)
+        const watchman = await User.create({
+            name: 'Security Officer Bob',
+            email: 'security@terrazas.com',
+            password: 'securitypassword',
+            role: 'watchman'
+        });
+
         console.log('Database seeded successfully.');
         process.exit(0);
     } catch (err) {
