@@ -1,0 +1,9 @@
+# Bug Tracker
+This file keeps track of all bugs and issues encountered during the development of the Terrazas de Guacuco Residential Website.
+
+## 1. Services Page Navigation Bug
+- **Date:** 2026-02-22
+- **Issue:** Navigating `Homepage -> Services -> Community Center -> Request Booking` and then pressing the browser's Back button twice to return to the `Services` page caused all amenity cards (except the Community Center card) to become unclickable.
+- **Cause:** The "Request Booking" buttons on the individual service pages and homepage were using standard HTML `<a>` tags instead of React Router's `<Link>` components. This caused a full page reload when navigating, breaking the Single Page Application (SPA) state and detaching React event listeners when the browser loaded the previous page from the `bfcache` (Back-Forward Cache).
+- **Resolution:** Replaced all `<a href="...">` anchor tags with React Router `<Link to="...">` components across all service pages (`CommunityCenter.jsx`, `Landscaping.jsx`, `ResortPool.jsx`, `SportsFacilities.jsx`) and the `Home.jsx` page. This ensures all navigation is actively handled by React within the DOM, preserving state perfectly when the Back button is used.
+- **Status:** Fixed

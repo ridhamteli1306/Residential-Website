@@ -81,14 +81,17 @@ const Services = () => {
                 ))}
             </div>
 
-            <div style={{ marginTop: '5rem', padding: '3rem', backgroundColor: '#f8fafc', borderRadius: '12px', textAlign: 'center' }}>
-                <h2 style={{ marginBottom: '1rem', color: 'var(--primary-color)' }}>Need Assistance?</h2>
-                <p style={{ marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem' }}>
-                    Our administrative team is here to help with any inquiries, maintenance requests, or facility bookings.
+            <div style={{ marginTop: '5rem', padding: '4rem 2rem', backgroundColor: '#f8fafc', borderRadius: '16px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                <h2 style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--primary-color)' }}>Ready to Make a Reservation?</h2>
+                <p style={{ fontSize: '1.1rem', marginBottom: '2.5rem', maxWidth: '600px', margin: '0 auto 2.5rem', color: '#475569', lineHeight: '1.6' }}>
+                    Whether you are planning a private event at the Community Center or securing a tennis court for the weekend, booking your favorite amenities is quick and easy.
                 </p>
-                <a href="/contact" style={{ display: 'inline-block', padding: '0.75rem 2rem', backgroundColor: 'var(--accent-color)', color: 'white', borderRadius: '8px', fontWeight: 'bold' }}>
-                    Contact Us
-                </a>
+                <button
+                    onClick={() => navigate('/booking')}
+                    style={{ display: 'inline-block', padding: '1rem 3rem', backgroundColor: 'var(--primary-color)', color: 'white', borderRadius: '8px', fontWeight: 'bold', fontSize: '1.1rem', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                >
+                    Book an Amenity Now
+                </button>
             </div>
         </div>
     );

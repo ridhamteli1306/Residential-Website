@@ -10,6 +10,7 @@ import Landscaping from './pages/services/Landscaping'
 import Security from './pages/services/Security'
 import SportsFacilities from './pages/services/SportsFacilities'
 import NatureTrails from './pages/services/NatureTrails'
+import Booking from './pages/Booking';
 
 import Layout from './components/Layout';
 
@@ -35,6 +36,7 @@ function App() {
                         <Route path="services/nature-trails" element={<NatureTrails />} />
                         <Route path="blog" element={<Blog />} />
                         <Route path="contact" element={<Contact />} />
+                        <Route path="booking" element={<Booking />} />
                         <Route path="login" element={<Login />} />
                         <Route path="signup" element={<Signup />} />
                         <Route path="dashboard" element={<Dashboard />} />

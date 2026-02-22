@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import gardenImg from '../../assets/garden.png';
 
 const Landscaping = () => {
@@ -40,9 +41,9 @@ const Landscaping = () => {
                         <li style={{ marginBottom: '0.5rem' }}>📞 (555) 123- GARDEN</li>
                         <li>✉️ landscaping@terrazas.com</li>
                     </ul>
-                    <a href="/contact" style={{ display: 'inline-block', padding: '0.75rem 1.5rem', backgroundColor: 'var(--primary-color)', color: 'white', borderRadius: '8px', fontWeight: 'bold' }}>
+                    <Link to="/booking" style={{ display: 'inline-block', padding: '0.75rem 1.5rem', backgroundColor: 'var(--primary-color)', color: 'white', borderRadius: '8px', fontWeight: 'bold' }}>
                         Submit Request
-                    </a>
+                    </Link>
                 </div>
             </div>
         </div>

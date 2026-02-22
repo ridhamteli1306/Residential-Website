@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import tennisImg from '../../assets/tennis_courts.png';
 
 const SportsFacilities = () => {
@@ -41,9 +42,9 @@ const SportsFacilities = () => {
                     <p style={{ marginBottom: '1rem' }}>
                         Join our resident coach for weekly group clinics or book a private lesson to improve your game.
                     </p>
-                    <a href="/contact" style={{ display: 'inline-block', padding: '0.75rem 1.5rem', backgroundColor: 'var(--primary-color)', color: 'white', borderRadius: '8px', fontWeight: 'bold' }}>
+                    <Link to="/booking" style={{ display: 'inline-block', padding: '0.75rem 1.5rem', backgroundColor: 'var(--primary-color)', color: 'white', borderRadius: '8px', fontWeight: 'bold' }}>
                         Book a Court
-                    </a>
+                    </Link>
                 </div>
             </div>
         </div>

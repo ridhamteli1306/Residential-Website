@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import communityCenterImg from '../../assets/community_center.png';
 
 const CommunityCenter = () => {
@@ -50,9 +51,9 @@ const CommunityCenter = () => {
                     <p style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
                         Residents can book the main hall for private events. Please contact administration for availability.
                     </p>
-                    <a href="/contact" style={{ display: 'block', width: '100%', padding: '0.75rem', backgroundColor: 'var(--primary-color)', color: 'white', textAlign: 'center', borderRadius: '8px', fontWeight: 'bold' }}>
+                    <Link to="/booking" style={{ display: 'block', width: '100%', padding: '0.75rem', backgroundColor: 'var(--primary-color)', color: 'white', textAlign: 'center', borderRadius: '8px', fontWeight: 'bold' }}>
                         Request Booking
-                    </a>
+                    </Link>
                 </div>
             </div>
         </div>
