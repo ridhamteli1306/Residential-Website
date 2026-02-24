@@ -1,139 +1,135 @@
 const { sequelize, User, Unit, Visit, Incident, Booking } = require('./database');
-const { faker } = require('@faker-js/faker'); // Ensure you ran: npm install @faker-js/faker
+const { faker } = require('@faker-js/faker');
 
 async function seed() {
     try {
-        await sequelize.sync({ force: true }); // Wipe everything
+        await sequelize.sync({ force: true });
+
+        const baseDate = new Date('2026-01-01T00:00:00Z');
+
+        console.log('Building 367 Units (50 empty)...');
+        const unitsToCreate = [];
+        const blocks = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
+        const emptyUnitIndexes = new Set();
+        while (emptyUnitIndexes.size < 50) {
+            emptyUnitIndexes.add(Math.floor(Math.random() * 367));
+        }
+
+        for (let i = 0; i < 367; i++) {
+            const block = blocks[Math.floor(Math.random() * blocks.length)];
+            const types = ['1b1b', '2b2b', 'townhouse', 'cabin'];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            let number;
+            if (type === '1b1b' || type === '2b2b') {
+                number = `${block}-${i + 100}`;
+            } else {
+                number = `${i + 400}`;
+            }
+
+            unitsToCreate.push({ number, type, block });
+        }
+        const insertedUnits = await Unit.bulkCreate(unitsToCreate, { returning: true });
+
+        const occupiedUnits = insertedUnits.filter((_, i) => !emptyUnitIndexes.has(i));
+
         console.log('Building 1008 Highly Realistic Users...');
-
         const usersToCreate = [];
-        const baseDate = new Date('2026-01-01T00:00:00Z'); // Strict rule: Nothing older than Jan 1, 2026
 
-        // 1. Superadmin (1)
         usersToCreate.push({
             name: faker.person.fullName(),
             email: 'admin@terrazas.com',
             password: 'adminpassword',
             role: 'superadmin',
-            phone: faker.phone.number({ style: 'national' })
+            phone: faker.phone.number({ style: 'national' }),
+            unitId: null
         });
 
-        // 2. Managers (5)
         for (let i = 1; i <= 5; i++) {
             usersToCreate.push({
                 name: faker.person.fullName(),
                 email: `manager${i}@terrazas.com`,
                 password: 'managerpassword',
                 role: 'manager',
-                phone: faker.phone.number({ style: 'national' })
+                phone: faker.phone.number({ style: 'national' }),
+                unitId: null
             });
         }
 
-        // 3. Watchman (200)
         for (let i = 1; i <= 200; i++) {
             usersToCreate.push({
                 name: faker.person.fullName(),
-                email: `watchman${i}@terrazas.com`, // using predictable prefix to make testing easier
+                email: `watchman${i}@terrazas.com`,
                 password: 'watchmanpassword',
                 role: 'watchman',
-                phone: faker.phone.number({ style: 'national' })
+                phone: faker.phone.number({ style: 'national' }),
+                unitId: null
             });
         }
 
-        // 4. Lifeguards (2)
         for (let i = 1; i <= 2; i++) {
             usersToCreate.push({
                 name: faker.person.fullName(),
                 email: `lifeguard${i}@terrazas.com`,
                 password: 'lifeguardpassword',
                 role: 'lifeguard',
-                phone: faker.phone.number({ style: 'national' })
+                phone: faker.phone.number({ style: 'national' }),
+                unitId: null
             });
         }
 
-        // 5. Residents (800)
+        // 800 Residents evenly distributed among occupiedUnits
         for (let i = 1; i <= 800; i++) {
+            const assignedUnit = occupiedUnits[i % occupiedUnits.length];
             usersToCreate.push({
                 name: faker.person.fullName(),
-                email: faker.internet.email().toLowerCase(), // Realistic random emails
+                email: faker.internet.email().toLowerCase(),
                 password: 'residentpassword',
                 role: 'resident',
-                phone: faker.phone.number({ style: 'national' })
+                phone: faker.phone.number({ style: 'national' }),
+                unitId: assignedUnit.id
             });
         }
 
-        const insertedUsers = await User.bulkCreate(usersToCreate);
+        const insertedUsers = await User.bulkCreate(usersToCreate, { returning: true });
 
-        // Extract out distinct arrays for relational mapping
         const residents = insertedUsers.filter(u => u.role === 'resident');
         const staff = insertedUsers.filter(u => ['superadmin', 'manager', 'watchman', 'lifeguard'].includes(u.role));
 
-        console.log('Building 367 Units (50 empty)...');
-        // Rules: alphanumeric for 1b1b/2b2b. numeric for townhouse/cabin. 7 Blocks.
-        const unitsToCreate = [];
-        const blocks = ['A', 'B', 'C', 'D', 'E', 'F', 'G']; // 7 Blocks
-
-        // Pick exactly 50 distinct array indexes to leave empty
-        const emptyUnitIndexes = new Set();
-        while (emptyUnitIndexes.size < 50) {
-            emptyUnitIndexes.add(Math.floor(Math.random() * 367));
-        }
-
-        let residentAssignmentIndex = 0;
-
-        for (let i = 0; i < 367; i++) {
-            const block = blocks[Math.floor(Math.random() * blocks.length)];
-
-            // Randomly pick a property type
-            const types = ['1b1b', '2b2b', 'townhouse', 'cabin'];
-            const type = types[Math.floor(Math.random() * types.length)];
-
-            // Generate valid Number logic based on type (alphanumeric vs purely numeric)
-            let number;
-            if (type === '1b1b' || type === '2b2b') {
-                number = `${block}-${i + 100}`; // e.g. A-101
-            } else {
-                number = `${i + 400}`; // purely numeric e.g. 401
+        // Group residents by unitId for easy lookup
+        const unitToResidentsMap = {};
+        residents.forEach(r => {
+            if (!unitToResidentsMap[r.unitId]) {
+                unitToResidentsMap[r.unitId] = [];
             }
-
-            // Figure out the owner (or null if it's one of the 50 empty ones)
-            let ownerId = null;
-            if (!emptyUnitIndexes.has(i)) {
-                ownerId = residents[residentAssignmentIndex % residents.length].id;
-                residentAssignmentIndex++;
-            }
-
-            unitsToCreate.push({
-                number,
-                type,
-                block,
-                ownerId // Nullable
-            });
-        }
-        const insertedUnits = await Unit.bulkCreate(unitsToCreate, { returning: true });
-
-        // We need units that actually have owners so visitors can visit them
-        const occupiedUnits = insertedUnits.filter(u => u.ownerId !== null);
+            unitToResidentsMap[r.unitId].push(r);
+        });
 
         console.log(`Building 2500 Gate Visits (>= Jan 2026)...`);
         const visitsToCreate = [];
         const visitStatuses = ['expected', 'entered', 'exited'];
 
         for (let i = 0; i < 2500; i++) {
-            // Pick rand occupied unit
             const destUnit = occupiedUnits[Math.floor(Math.random() * occupiedUnits.length)];
-            const timeIn = faker.date.between({ from: baseDate, to: new Date() }); // Random date >= Jan 1, 2026
+            const timeIn = faker.date.between({ from: baseDate, to: new Date() });
+
+            // Random host from that unit
+            const potentialHosts = unitToResidentsMap[destUnit.id];
+            const hostId = potentialHosts && potentialHosts.length > 0
+                ? potentialHosts[Math.floor(Math.random() * potentialHosts.length)].id
+                : residents[0].id; // Fallback just in case
 
             visitsToCreate.push({
                 visitorName: faker.person.fullName(),
                 visitorIdCard: faker.string.alphanumeric({ length: { min: 6, max: 10 } }).toUpperCase(),
-                plateNumber: Math.random() > 0.3 ? faker.vehicle.vrm() : null, // 70% drive a car
+                plateNumber: Math.random() > 0.3 ? faker.vehicle.vrm() : null,
                 status: visitStatuses[Math.floor(Math.random() * visitStatuses.length)],
                 createdAt: timeIn,
                 updatedAt: timeIn,
                 exitTime: Math.random() > 0.5 ? faker.date.soon({ days: 1, refDate: timeIn }) : null,
                 unitId: destUnit.id,
-                hostId: destUnit.ownerId // Correctly linked FK!
+                hostId: hostId
             });
         }
         await Visit.bulkCreate(visitsToCreate);
@@ -145,7 +141,7 @@ async function seed() {
         const commonLocations = ['Main Gate', 'Pool Area', 'Hallway C', 'Parking Lot', 'Tennis Court'];
 
         for (let i = 0; i < 500; i++) {
-            const isReportedByStaff = Math.random() > 0.8; // 20% reported by staff, 80% residents
+            const isReportedByStaff = Math.random() > 0.8;
             const reporter = isReportedByStaff ?
                 staff[Math.floor(Math.random() * staff.length)] :
                 residents[Math.floor(Math.random() * residents.length)];

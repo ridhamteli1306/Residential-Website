@@ -49,3 +49,17 @@ This file keeps track of all bugs and issues encountered during the development 
 - **Cause:** The frontend code in `SuperadminDashboard.jsx` was incorrectly targeting the API endpoints `/users` and `/users/${userId}`. The backend, however, routes all user management through the `/auth` prefix (e.g., `/auth/users`).
 - **Resolution:** Updated the `fetchData` function and `handleDeleteUser` method in `SuperadminDashboard.jsx` to use the correct API paths: `/auth/users` for fetching and `/auth/users/${userId}` for deletion.
 - **Status:** Fixed
+
+## 6. Leaflet Map Crashing Vite Development Server
+- **Date:** 2026-02-23
+- **Issue:** The `VisitorDashboard` caused a fatal frontend crash resulting in a `[plugin:vite:import-analysis] Failed to resolve import` error. The entire website became unreachable.
+- **Cause:** The `CommunityMap.jsx` component was using older Node.js `require()` statements to load the default location pin images for the `react-leaflet` map. Vite is an ES Module bundler and strictly does not support CommonJS `require()` syntax in the browser frontend code, causing the build process to fail immediately.
+- **Resolution:** Refactored the marker image loading in `CommunityMap.jsx` to use standard ES6 `import` paths for `marker-icon.png`, `marker-icon-2x.png`, and `marker-shadow.png`.
+- **Status:** Fixed
+
+## 7. Javascript Date UTC Timezone Shift
+- **Date:** 2026-02-24
+- **Issue:** On the Superadmin Visitor Directory, applying a "From Date" or "To Date" filter (e.g., filtering for Feb 1st) would consistently match and display records from the day prior (Jan 31st).
+- **Cause:** Selecting a date from an HTML `<input type="date">` returns a string formatted as `YYYY-MM-DD`. Passing this string directly into `new Date('YYYY-MM-DD')` causes Javascript to default to parsing it as midnight UTC (`00:00:00Z`). When compared against the user's local timezone (e.g., UTC-6), this mathematically shifted the comparison boundary backward into the previous evening (6:00 PM the day prior).
+- **Resolution:** Modified the filter logic in `SuperadminDashboard.jsx` to manually split the date string (`.split('-')`) and construct a new local Javascript date object (`new Date(year, month - 1, day)`) to force the boundary calculation to happen entirely within the local machine's native timezone.
+- **Status:** Fixed

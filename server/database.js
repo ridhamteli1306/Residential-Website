@@ -6,8 +6,8 @@ const Incident = require('./models/Incident');
 const Booking = require('./models/Booking');
 
 // Associations
-User.hasMany(Unit, { foreignKey: 'ownerId' });
-Unit.belongsTo(User, { as: 'owner', foreignKey: 'ownerId' });
+Unit.hasMany(User, { foreignKey: 'unitId', as: 'residents' });
+User.belongsTo(Unit, { foreignKey: 'unitId', as: 'unit' });
 
 Unit.hasMany(Visit, { foreignKey: 'unitId' });
 Visit.belongsTo(Unit, { foreignKey: 'unitId' });

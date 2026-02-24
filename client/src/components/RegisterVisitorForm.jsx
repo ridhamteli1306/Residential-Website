@@ -15,8 +15,8 @@ const RegisterVisitorForm = ({ user, onClose }) => {
         const fetchUnits = async () => {
             try {
                 const res = await api.get('/units');
-                // Filter units where this resident is the owner, or just show all if none
-                const myUnits = res.data.filter(u => u.ownerId === user.id);
+                // Filter unit where this resident lives, or just show all if none
+                const myUnits = res.data.filter(u => u.id === user.unitId);
                 setUnits(myUnits.length > 0 ? myUnits : res.data);
                 if (myUnits.length > 0) {
                     setFormData(prev => ({ ...prev, unitId: myUnits[0].id }));

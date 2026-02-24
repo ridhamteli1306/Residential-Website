@@ -32,16 +32,15 @@ const login = async (req, res) => {
 const register = async (req, res) => {
     const { name, email, password, role, phone, unitNumber } = req.body;
     try {
-        const user = await User.create({ name, email, password, role, phone });
-
-        // If a resident provides a unit number, link them as the owner
-        if (role === 'resident' && unitNumber) {
+        let assignedUnitId = null;
+        if ((role === 'resident' || role === 'visitor') && unitNumber) {
             const unit = await Unit.findOne({ where: { number: unitNumber.toUpperCase() } });
             if (unit) {
-                unit.ownerId = user.id;
-                await unit.save();
+                assignedUnitId = unit.id;
             }
         }
+
+        const user = await User.create({ name, email, password, role, phone, unitId: assignedUnitId });
 
         res.status(201).json({ message: 'User created successfully', user });
     } catch (error) {

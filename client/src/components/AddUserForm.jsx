@@ -8,8 +8,9 @@ const AddUserForm = ({ onUserAdded }) => {
         name: '',
         email: '',
         password: '',
-        role: '', // No default selection
-        phone: ''
+        role: '',
+        phone: '',
+        unitNumber: ''
     });
     const [message, setMessage] = useState('');
 
@@ -22,7 +23,7 @@ const AddUserForm = ({ onUserAdded }) => {
         try {
             await api.post('/auth/register', formData);
             setMessage('User created successfully!');
-            setFormData({ name: '', email: '', password: '', role: '', phone: '' });
+            setFormData({ name: '', email: '', password: '', role: '', phone: '', unitNumber: '' });
             if (onUserAdded) onUserAdded();
         } catch (error) {
             setMessage('Error: ' + (error.response?.data?.message || error.message));
@@ -71,6 +72,13 @@ const AddUserForm = ({ onUserAdded }) => {
                         {user?.role === 'superadmin' && <option value="manager">Manager</option>}
                     </select>
                 </div>
+
+                {(formData.role === 'resident' || formData.role === 'visitor') && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <label style={{ fontWeight: 'bold', color: '#475569', fontSize: '0.9rem' }}>Unit {formData.role === 'resident' ? '*' : ''}</label>
+                        <input name="unitNumber" placeholder="e.g. A101" value={formData.unitNumber} onChange={handleChange} required={formData.role === 'resident'} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }} />
+                    </div>
+                )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', gridColumn: '1 / -1' }}>
                     <label style={{ fontWeight: 'bold', color: '#475569', fontSize: '0.9rem' }}>Phone Number</label>

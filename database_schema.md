@@ -9,13 +9,13 @@
 - **password** (String, Hashed)
 - **role** (Enum: `superadmin`, `manager`, `watchman`, `lifeguard`, `resident`, `visitor`)
 - **phone** (String, Nullable)
+- **unitId** (Integer, Foreign Key -> `Units.id`, Nullable) — Identifies which specific unit a resident lives in. Visitors and staff typically have this set to Null.
 
 ### 2. `Units` Table (The physical properties in the complex)
 - **id** (Integer, Primary Key)
 - **number** (String, Unique) — e.g., "A-101"
 - **type** (Enum: `1b1b`, `2b2b`, `townhouse`, `cabin`)
 - **block** (String)
-- **ownerId** (Integer, Foreign Key -> `Users.id`) — Links the unit to a specific resident.
 
 ### 3. `Visits` Table (Security gate logs & Pre-registrations)
 - **id** (Integer, Primary Key)
@@ -57,7 +57,7 @@
 
 ```mermaid
 erDiagram
-    USERS ||--o{ UNITS : "owns"
+    UNITS ||--o{ USERS : "houses (residents)"
     USERS ||--o{ BOOKINGS : "makes reservation"
     USERS ||--o{ INCIDENTS : "reports"
     USERS ||--o{ VISITS : "hosts/authorizes"
@@ -70,13 +70,13 @@ erDiagram
         string email UK
         string password
         enum role
+        int unitId FK
     }
     
     UNITS {
         int id PK
         string number UK
         enum type
-        int ownerId FK
     }
 
     BOOKINGS {
@@ -122,7 +122,7 @@ erDiagram
 2. **Foreign Keys (FK) & Normalization:**
    - Instead of duplicating string data, tables reference other tables via `id`s (e.g., `userId`). This saves space, ensures accuracy, and updates cascade naturally.
 3. **One-to-Many Relationships (1:N):**
-   - ONE `User` can own MANY `Units`. ONE `User` can report MANY `Incidents`.
+   - ONE `Unit` can house MANY `Users` (Residents). ONE `User` can report MANY `Incidents`.
 4. **Enums (Enumerations):**
    - Restricting a database column to a strict list of allowed words. This guarantees database integrity by stopping invalid entries.
 5. **Unique Constraints (UK):**
