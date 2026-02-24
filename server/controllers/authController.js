@@ -1,4 +1,4 @@
-const { User } = require('../database');
+const { User, Unit } = require('../database');
 const jwt = require('jsonwebtoken');
 
 const login = async (req, res) => {
@@ -30,9 +30,19 @@ const login = async (req, res) => {
 };
 
 const register = async (req, res) => {
-    const { name, email, password, role, phone } = req.body;
+    const { name, email, password, role, phone, unitNumber } = req.body;
     try {
         const user = await User.create({ name, email, password, role, phone });
+
+        // If a resident provides a unit number, link them as the owner
+        if (role === 'resident' && unitNumber) {
+            const unit = await Unit.findOne({ where: { number: unitNumber.toUpperCase() } });
+            if (unit) {
+                unit.ownerId = user.id;
+                await unit.save();
+            }
+        }
+
         res.status(201).json({ message: 'User created successfully', user });
     } catch (error) {
         res.status(500).json({ message: 'Error creating user', error: error.message });
@@ -63,4 +73,40 @@ const forgotPassword = async (req, res) => {
     }
 }
 
-module.exports = { login, register, getUsers, forgotPassword };
+const deleteUser = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        await user.destroy();
+        res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting user', error: error.message });
+    }
+}
+
+const updateUser = async (req, res) => {
+    const { id } = req.params;
+    const { name, email, role, phone } = req.body;
+    try {
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.name = name || user.name;
+        user.email = email || user.email;
+        user.role = role || user.role;
+        user.phone = phone || user.phone;
+
+        await user.save();
+
+        res.json({ message: 'User updated successfully', user });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating user', error: error.message });
+    }
+}
+
+module.exports = { login, register, getUsers, forgotPassword, deleteUser, updateUser };

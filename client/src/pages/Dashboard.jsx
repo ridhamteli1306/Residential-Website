@@ -5,6 +5,7 @@ import ManagerDashboard from './dashboards/ManagerDashboard';
 import ResidentDashboard from './dashboards/ResidentDashboard';
 import VisitorDashboard from './dashboards/VisitorDashboard';
 import SecurityDashboard from './dashboards/SecurityDashboard';
+import SuperadminDashboard from './dashboards/SuperadminDashboard';
 
 const Dashboard = () => {
     const { user, logout } = useContext(AuthContext);
@@ -20,6 +21,7 @@ const Dashboard = () => {
     const renderDashboard = () => {
         switch (user.role) {
             case 'superadmin':
+                return <SuperadminDashboard />;
             case 'manager':
                 return <ManagerDashboard />;
             case 'watchman':

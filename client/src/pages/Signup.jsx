@@ -7,6 +7,7 @@ const Signup = () => {
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [role, setRole] = useState('resident');
+    const [unitNumber, setUnitNumber] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -20,7 +21,7 @@ const Signup = () => {
         setError('');
         setSuccessMessage('');
 
-        const userData = { name, email, password, phone, role };
+        const userData = { name, email, password, phone, role, unitNumber: role === 'resident' ? unitNumber : undefined };
         const result = await register(userData);
 
         if (result.success) {
@@ -28,6 +29,7 @@ const Signup = () => {
             // Clear current fields to prevent double submission
             setName('');
             setPhone('');
+            setUnitNumber('');
             setEmail('');
             setPassword('');
         } else {
@@ -80,6 +82,19 @@ const Signup = () => {
                             <option value="visitor">Visitor</option>
                         </select>
                     </div>
+                    {role === 'resident' && (
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#334155' }}>Apartment, Townhouse, or Cabin Number</label>
+                            <input
+                                type="text"
+                                value={unitNumber}
+                                onChange={(e) => setUnitNumber(e.target.value)}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+                                required
+                                placeholder="e.g. A-101 or 401"
+                            />
+                        </div>
+                    )}
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#334155' }}>Email Address</label>
                         <input

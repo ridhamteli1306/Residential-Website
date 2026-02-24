@@ -78,6 +78,7 @@ const Booking = () => {
     const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
     const [loginName, setLoginName] = useState('');
     const [loginRole, setLoginRole] = useState('resident');
+    const [loginUnitNumber, setLoginUnitNumber] = useState('');
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPhone, setLoginPhone] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
@@ -158,7 +159,8 @@ const Booking = () => {
                 email: loginEmail,
                 password: loginPassword,
                 phone: loginPhone,
-                role: loginRole
+                role: loginRole,
+                unitNumber: loginRole === 'resident' ? loginUnitNumber : undefined
             });
 
             if (!result.success) {
@@ -260,6 +262,19 @@ const Booking = () => {
                                             <option value="visitor">Visitor</option>
                                         </select>
                                     </div>
+                                    {loginRole === 'resident' && (
+                                        <div>
+                                            <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 'bold', color: '#334155', fontSize: '0.9rem' }}>Apartment, Townhouse, or Cabin Number</label>
+                                            <input
+                                                type="text"
+                                                required={authMode === 'signup'}
+                                                value={loginUnitNumber}
+                                                onChange={(e) => setLoginUnitNumber(e.target.value)}
+                                                style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+                                                placeholder="e.g. A-101 or 401"
+                                            />
+                                        </div>
+                                    )}
                                 </>
                             )}
                             <div>

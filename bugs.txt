@@ -28,3 +28,24 @@ This file keeps track of all bugs and issues encountered during the development 
 - **Cause:** The `node seed.js` script was executed while the main `server.js` Express server was actively running and holding an open connection cache to the SQLite database. While the script ran successfully, the active backend server did not pick up the newly seeded data.
 - **Resolution:** Force-stopped all running Node processes, ran the seed script cleanly on an unlocked database, and then restarted both the backend and frontend servers `Stop-Process -Name node -Force; node seed.js; node server.js`.
 - **Status:** Fixed
+
+## 5. Superadmin Dashboard Data Display Bug
+- **Date:** 2026-02-23
+- **Issue:** The Superadmin Dashboard displayed 0 Total Users and an empty Global User Directory table.
+- **Cause:** The frontend code in `SuperadminDashboard.jsx` was incorrectly targeting the API endpoints `/users` and `/users/${userId}`. The backend, however, routes all user management through the `/auth` prefix (e.g., `/auth/users`).
+- **Resolution:** Updated the `fetchData` function and `handleDeleteUser` method in `SuperadminDashboard.jsx` to use the correct API paths: `/auth/users` for fetching and `/auth/users/${userId}` for deletion.
+- **Status:** Fixed
+
+## 6. Leaflet Map Crashing Vite Development Server
+- **Date:** 2026-02-23
+- **Issue:** The `VisitorDashboard` caused a fatal frontend crash resulting in a `[plugin:vite:import-analysis] Failed to resolve import` error. The entire website became unreachable.
+- **Cause:** The `CommunityMap.jsx` component was using older Node.js `require()` statements to load the default location pin images for the `react-leaflet` map. Vite is an ES Module bundler and strictly does not support CommonJS `require()` syntax in the browser frontend code, causing the build process to fail immediately.
+- **Resolution:** Refactored the marker image loading in `CommunityMap.jsx` to use standard ES6 `import` paths for `marker-icon.png`, `marker-icon-2x.png`, and `marker-shadow.png`.
+- **Status:** Fixed
+
+## 5. Superadmin Dashboard Data Display Bug
+- **Date:** 2026-02-23
+- **Issue:** The Superadmin Dashboard displayed 0 Total Users and an empty Global User Directory table.
+- **Cause:** The frontend code in `SuperadminDashboard.jsx` was incorrectly targeting the API endpoints `/users` and `/users/${userId}`. The backend, however, routes all user management through the `/auth` prefix (e.g., `/auth/users`).
+- **Resolution:** Updated the `fetchData` function and `handleDeleteUser` method in `SuperadminDashboard.jsx` to use the correct API paths: `/auth/users` for fetching and `/auth/users/${userId}` for deletion.
+- **Status:** Fixed
