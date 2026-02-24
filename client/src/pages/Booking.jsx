@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+import api from '../services/api';
 
 const generateTimeOptions = (selectedDate, amenity) => {
     const options = [];
@@ -10,17 +12,17 @@ const generateTimeOptions = (selectedDate, amenity) => {
     let maxHour = 24;
 
     switch (amenity) {
-        case 'Community Center':
+        case 'community_center':
             minHour = 8; maxHour = 22; break; // 8:00 AM - 10:00 PM
-        case 'Resort Pool Cabana':
+        case 'resort_pool':
             minHour = 6; maxHour = 22; break; // 6:00 AM - 10:00 PM
-        case 'Tennis Court':
+        case 'tennis_court':
             minHour = 6; maxHour = 22; break; // 6:00 AM - 10:00 PM
-        case 'Multi-purpose Facility':
+        case 'multi_purpose_facility':
             minHour = 8; maxHour = 21; break; // 8:00 AM - 9:00 PM
-        case 'Schedule a Tour':
-            minHour = 8; maxHour = 17; break; // 8:00 AM - 5:00 PM
-        case 'Landscaping Service':
+        case 'nature_trails':
+            minHour = 6; maxHour = 18; break; // 6:00 AM - 6:00 PM
+        case 'landscaping':
             minHour = 8; maxHour = 17; break; // 8:00 AM - 5:00 PM
         default:
             minHour = 0; maxHour = 24;
@@ -56,10 +58,9 @@ const generateTimeOptions = (selectedDate, amenity) => {
 
 const Booking = () => {
     const navigate = useNavigate();
+    const { user, login, register } = useContext(AuthContext);
 
     // Form fields
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
     const [amenity, setAmenity] = useState('');
     const [facilitySport, setFacilitySport] = useState('');
     const [date, setDate] = useState('');
@@ -72,48 +73,253 @@ const Booking = () => {
     const [submittedFacilitySport, setSubmittedFacilitySport] = useState('');
     const [submittedDate, setSubmittedDate] = useState('');
 
+    // Login modal states
+    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+    const [loginName, setLoginName] = useState('');
+    const [loginRole, setLoginRole] = useState('resident');
+    const [loginEmail, setLoginEmail] = useState('');
+    const [loginPhone, setLoginPhone] = useState('');
+    const [loginPassword, setLoginPassword] = useState('');
+    const [loginError, setLoginError] = useState('');
+
     // Get today's date in YYYY-MM-DD format for the min attribute
     const today = new Date().toISOString().split('T')[0];
 
     const getMaxGuests = () => {
         switch (amenity) {
-            case 'Community Center': return 150;
-            case 'Resort Pool Cabana': return 100;
-            case 'Tennis Court': return 6;
-            case 'Schedule a Tour': return 4;
-            case 'Multi-purpose Facility': return 30;
+            case 'community_center': return 150;
+            case 'resort_pool': return 100;
+            case 'tennis_court': return 6;
+            case 'nature_trails': return 50;
+            case 'multi_purpose_facility': return 30;
             default: return 50;
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // In a real application, you would send this to your backend API
-        // api.post('/bookings', { name, email, amenity, facilitySport, date, time, guests, notes })
 
-        console.log('Booking submitted:', { name, email, amenity, facilitySport, date, time, guests, notes });
-        setSubmittedAmenity(amenity);
-        setSubmittedFacilitySport(facilitySport);
+        if (!user) {
+            setShowLoginModal(true);
+            return;
+        }
 
-        // Format date from YYYY-MM-DD to MM-DD-YYYY
-        const [year, month, day] = date.split('-');
-        setSubmittedDate(`${month}-${day}-${year}`);
+        await submitBooking(user.id);
+    };
 
-        setIsSubmitted(true);
+    const submitBooking = async (userId) => {
+        try {
+            await api.post('/bookings', {
+                amenity,
+                facilitySport: amenity === 'multi_purpose_facility' ? facilitySport : null,
+                date,
+                time,
+                guests: parseInt(guests, 10),
+                userId: userId
+            });
 
-        // Reset form
-        setName('');
-        setEmail('');
-        setAmenity('');
-        setFacilitySport('');
-        setDate('');
-        setTime('');
-        setGuests('1');
-        setNotes('');
+            const labels = {
+                'community_center': 'Community Center',
+                'resort_pool': 'Resort Pool Cabana',
+                'tennis_court': 'Tennis Court',
+                'multi_purpose_facility': 'Multi-purpose Facility',
+                'landscaping': 'Private Landscaping',
+                'nature_trails': 'Nature Trails Event'
+            };
+            setSubmittedAmenity(labels[amenity] || amenity);
+            setSubmittedFacilitySport(facilitySport);
+
+            const [year, month, day] = date.split('-');
+            setSubmittedDate(`${month}-${day}-${year}`);
+
+            setIsSubmitted(true);
+
+            // Reset form
+            setAmenity('');
+            setFacilitySport('');
+            setDate('');
+            setTime('');
+            setGuests('1');
+            setNotes('');
+        } catch (error) {
+            console.error('Failed to submit booking', error);
+            alert('Failed to submit booking. Please try again.');
+        }
+    };
+
+    const handleAuthSubmit = async (e) => {
+        e.preventDefault();
+        setLoginError('');
+
+        if (authMode === 'signup') {
+            const result = await register({
+                name: loginName,
+                email: loginEmail,
+                password: loginPassword,
+                phone: loginPhone,
+                role: loginRole
+            });
+
+            if (!result.success) {
+                setLoginError(result.message);
+                return;
+            }
+            // Fall through to login automatically right after successful registration!
+        }
+
+        const result = await login(loginEmail, loginPassword);
+
+        if (result.success) {
+            setShowLoginModal(false);
+            // After successful login, bypass the React state cycle and read the newly saved token from localStorage
+            setTimeout(() => {
+                const storedUser = JSON.parse(localStorage.getItem('user'));
+                if (storedUser && storedUser.id) {
+                    submitBooking(storedUser.id);
+                } else {
+                    alert('Authentication successful! Please click "Confirm Booking" to finalize your reservation.');
+                }
+            }, 100);
+        } else {
+            setLoginError(result.message);
+        }
     };
 
     return (
         <div className="container" style={{ padding: '2rem 0', maxWidth: '800px', position: 'relative' }}>
+            {!user && (
+                <div style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '1rem', borderRadius: '8px', marginBottom: '2rem', textAlign: 'center' }}>
+                    <strong>Notice:</strong> You can quickly make your selection, but you will be required to securely log in before confirming.
+                </div>
+            )}
+            {showLoginModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.6)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    <div style={{ padding: '2.5rem', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '400px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <button
+                            onClick={() => setShowLoginModal(false)}
+                            style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}
+                        >
+                            &times;
+                        </button>
+                        <h2 style={{ color: 'var(--primary-color)', marginBottom: '0.5rem', textAlign: 'center' }}>
+                            {authMode === 'login' ? 'Log In to Book' : 'Create Account to Book'}
+                        </h2>
+                        <p style={{ textAlign: 'center', color: '#64748b', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                            {authMode === 'login'
+                                ? <>Log in to automatically confirm your reservation for the <strong>{amenity.replace('_', ' ')}</strong>.</>
+                                : <>Sign up as a new resident to confirm your reservation for the <strong>{amenity.replace('_', ' ')}</strong>.</>
+                            }
+                        </p>
+
+                        {loginError && <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '0.75rem', borderRadius: '6px', marginBottom: '1rem', textAlign: 'center', fontSize: '0.85rem' }}>{loginError}</div>}
+
+                        <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {authMode === 'signup' && (
+                                <>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 'bold', color: '#334155', fontSize: '0.9rem' }}>Full Name</label>
+                                        <input
+                                            type="text"
+                                            required={authMode === 'signup'}
+                                            value={loginName}
+                                            onChange={(e) => setLoginName(e.target.value)}
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+                                            placeholder="John Doe"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 'bold', color: '#334155', fontSize: '0.9rem' }}>Phone Number</label>
+                                        <input
+                                            type="tel"
+                                            required={authMode === 'signup'}
+                                            value={loginPhone}
+                                            onChange={(e) => setLoginPhone(e.target.value)}
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+                                            placeholder="(555) 123-4567"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 'bold', color: '#334155', fontSize: '0.9rem' }}>I am a...</label>
+                                        <select
+                                            value={loginRole}
+                                            onChange={(e) => setLoginRole(e.target.value)}
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', backgroundColor: 'white' }}
+                                            required={authMode === 'signup'}
+                                        >
+                                            <option value="resident">Resident</option>
+                                            <option value="visitor">Visitor</option>
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 'bold', color: '#334155', fontSize: '0.9rem' }}>Email Address</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={loginEmail}
+                                    onChange={(e) => setLoginEmail(e.target.value)}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+                                    placeholder="you@example.com"
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 'bold', color: '#334155', fontSize: '0.9rem' }}>Password</label>
+                                <input
+                                    type="password"
+                                    required
+                                    value={loginPassword}
+                                    onChange={(e) => setLoginPassword(e.target.value)}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                style={{ marginTop: '0.5rem', width: '100%', padding: '0.75rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                                {authMode === 'login' ? 'Log In & Confirm Booking' : 'Sign Up & Confirm Booking'}
+                            </button>
+                        </form>
+
+                        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.9rem', color: '#64748b' }}>
+                            {authMode === 'login' ? (
+                                <>
+                                    Don't have an account?{' '}
+                                    <button
+                                        type="button"
+                                        onClick={() => { setAuthMode('signup'); setLoginError(''); }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--primary-color)', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}
+                                    >
+                                        Sign up here
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    Already have an account?{' '}
+                                    <button
+                                        type="button"
+                                        onClick={() => { setAuthMode('login'); setLoginError(''); }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--primary-color)', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}
+                                    >
+                                        Log in here
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
             {isSubmitted && (
                 <div style={{
                     position: 'fixed',
@@ -162,29 +368,8 @@ const Booking = () => {
             <div style={{ backgroundColor: 'white', padding: '3rem', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#334155' }}>Full Name *</label>
-                            <input
-                                type="text"
-                                required
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}
-                                placeholder="Your name"
-                            />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#334155' }}>Email Address *</label>
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}
-                                placeholder="you@example.com"
-                            />
-                        </div>
+                    <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem' }}>Booking as: <strong>{user?.name || 'Guest'}</strong> ({user?.email || 'N/A'})</p>
                     </div>
 
                     <div>
@@ -201,16 +386,16 @@ const Booking = () => {
                             style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', backgroundColor: 'white' }}
                         >
                             <option value="" disabled>Choose an option...</option>
-                            <option value="Community Center">Community Center (Event Hall)</option>
-                            <option value="Resort Pool Cabana">Resort Pool (Private Cabana)</option>
-                            <option value="Tennis Court">Tennis Court</option>
-                            <option value="Multi-purpose Facility">Multi-purpose Facility</option>
-                            <option value="Landscaping Service">Schedule Private Landscaping</option>
-                            <option value="Schedule a Tour">Schedule a Tour</option>
+                            <option value="community_center">Community Center (Event Hall)</option>
+                            <option value="resort_pool">Resort Pool (Private Cabana)</option>
+                            <option value="tennis_court">Tennis Court</option>
+                            <option value="multi_purpose_facility">Multi-purpose Facility</option>
+                            <option value="landscaping">Schedule Private Landscaping</option>
+                            <option value="nature_trails">Nature Trails Event</option>
                         </select>
                     </div>
 
-                    {amenity === 'Multi-purpose Facility' && (
+                    {amenity === 'multi_purpose_facility' && (
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#334155' }}>Select Sport *</label>
                             <select
@@ -227,7 +412,7 @@ const Booking = () => {
                         </div>
                     )}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: amenity === 'Landscaping Service' ? '1fr 1fr' : '1fr 1fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: amenity === 'landscaping' ? '1fr 1fr' : '1fr 1fr 1fr', gap: '1.5rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#334155' }}>Date *</label>
                             <input
@@ -251,7 +436,7 @@ const Booking = () => {
                                 {generateTimeOptions(date, amenity)}
                             </select>
                         </div>
-                        {amenity !== 'Landscaping Service' && (
+                        {amenity !== 'landscaping' && (
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#334155' }}>Expected Guests{amenity ? ` (Max ${getMaxGuests()})` : ''}</label>
                                 <input

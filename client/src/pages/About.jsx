@@ -56,7 +56,7 @@ const About = () => {
                 <div>
                     <h2 style={{ marginBottom: '1rem', color: 'var(--secondary-color)' }}>A Place to Call Home</h2>
                     <p style={{ marginBottom: '1rem' }}>
-                        With over 367 units ranging from cozy studios to spacious townhouses, we offer diverse living options to suit every lifestyle. Our 200+ dedicated staff members work round the clock to ensure the community runs smoothly.
+                        With over 367 units ranging from cozy 1 bedroom apartments to spacious townhouses, we offer diverse living options to suit every lifestyle. Our 200+ dedicated staff members work round the clock to ensure the community runs smoothly.
                     </p>
                     <p>
                         Come and experience the tranquility of Terrazas de Guacuco.

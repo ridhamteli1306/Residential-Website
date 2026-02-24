@@ -12,6 +12,7 @@ const authRoutes = require('./routes/authRoutes');
 const unitRoutes = require('./routes/unitRoutes');
 const visitRoutes = require('./routes/visitRoutes');
 const incidentRoutes = require('./routes/incidentRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
 
 app.use(cors());
 app.use(express.json());
@@ -20,6 +21,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/units', unitRoutes);
 app.use('/api/visits', visitRoutes);
 app.use('/api/incidents', incidentRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 // Routes placeholder
 app.get('/', (req, res) => {

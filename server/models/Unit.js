@@ -13,7 +13,7 @@ const Unit = sequelize.define('Unit', {
         unique: true
     },
     type: {
-        type: DataTypes.ENUM('studio', 'townhouse', 'cabin'),
+        type: DataTypes.ENUM('1b1b', '2b2b', 'townhouse', 'cabin'),
         allowNull: false
     },
     block: {

@@ -3,6 +3,7 @@ const User = require('./models/User');
 const Unit = require('./models/Unit');
 const Visit = require('./models/Visit');
 const Incident = require('./models/Incident');
+const Booking = require('./models/Booking');
 
 // Associations
 User.hasMany(Unit, { foreignKey: 'ownerId' });
@@ -17,4 +18,7 @@ Visit.belongsTo(User, { foreignKey: 'hostId', as: 'host' });
 User.hasMany(Incident, { foreignKey: 'reporterId', as: 'reportedIncidents' });
 Incident.belongsTo(User, { foreignKey: 'reporterId', as: 'reporter' });
 
-module.exports = { sequelize, User, Unit, Visit, Incident };
+User.hasMany(Booking, { foreignKey: 'userId', as: 'bookings' });
+Booking.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+module.exports = { sequelize, User, Unit, Visit, Incident, Booking };

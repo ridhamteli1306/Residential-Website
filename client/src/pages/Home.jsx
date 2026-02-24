@@ -17,7 +17,7 @@ import trailImg from '../assets/walking_trail.png';
 const Home = () => {
     const slides = [
         { url: firstSlideImg, title: 'Welcome to Terrazas de Guacuco: Luxury Living in Harmony with Nature.' },
-        { url: studioImg, title: 'Modern Studio Apartment' },
+        { url: studioImg, title: 'Modern 1 Bedroom Apartment' },
         { url: townhouseImg, title: 'Luxury Townhouse' },
         { url: cozyCabinImg, title: 'Cozy Cabin' },
         { url: poolImg, title: 'Resort-Style Pool' },
