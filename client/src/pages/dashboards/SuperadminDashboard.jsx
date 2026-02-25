@@ -14,8 +14,7 @@ const SuperadminDashboard = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [usersPerPage, setUsersPerPage] = useState(10);
     const [activeDirectory, setActiveDirectory] = useState('staff'); // 'staff', 'resident', 'visitor'
-    const [visitorSort, setVisitorSort] = useState('newest'); // 'newest', 'oldest', 'a-z', 'z-a'
-    const [residentSort, setResidentSort] = useState('a-z'); // 'a-z', 'z-a', 'newest', 'oldest'
+    const [directorySort, setDirectorySort] = useState('a-z'); // 'a-z', 'z-a', 'newest', 'oldest'
     const [staffRoleFilter, setStaffRoleFilter] = useState('all'); // 'all', 'manager', 'superadmin', 'watchman', 'lifeguard'
     const [visitorFilters, setVisitorFilters] = useState({ status: 'all', unit: '', startDate: '', endDate: '' });
 
@@ -188,10 +187,10 @@ const SuperadminDashboard = () => {
             }
             return true;
         }).sort((a, b) => {
-            if (visitorSort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-            if (visitorSort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-            if (visitorSort === 'a-z') return a.visitorName.localeCompare(b.visitorName);
-            if (visitorSort === 'z-a') return b.visitorName.localeCompare(a.visitorName);
+            if (directorySort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+            if (directorySort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+            if (directorySort === 'a-z') return a.visitorName.localeCompare(b.visitorName);
+            if (directorySort === 'z-a') return b.visitorName.localeCompare(a.visitorName);
             return 0;
         })
         : users.filter(u => {
@@ -204,11 +203,10 @@ const SuperadminDashboard = () => {
             if (activeDirectory === 'resident') return u.role === 'resident';
             return true;
         }).sort((a, b) => {
-            if (activeDirectory !== 'resident') return 0;
-            if (residentSort === 'newest') return b.id - a.id;
-            if (residentSort === 'oldest') return a.id - b.id;
-            if (residentSort === 'a-z') return a.name.localeCompare(b.name);
-            if (residentSort === 'z-a') return b.name.localeCompare(a.name);
+            if (directorySort === 'newest') return b.id - a.id;
+            if (directorySort === 'oldest') return a.id - b.id;
+            if (directorySort === 'a-z') return a.name.localeCompare(b.name);
+            if (directorySort === 'z-a') return b.name.localeCompare(a.name);
             return 0;
         });
 
@@ -236,23 +234,18 @@ const SuperadminDashboard = () => {
         setCurrentPage(1); // Reset pagination on tab change
     };
 
-    const handleSortChange = (e) => {
-        setVisitorSort(e.target.value);
-        setCurrentPage(1); // Reset pagination on sort change
-    };
-
-    const handleFilterChange = (e) => {
-        setVisitorFilters({ ...visitorFilters, [e.target.name]: e.target.value });
-        setCurrentPage(1); // Reset pagination on filter change
-    };
-
-    const handleResidentSortChange = (e) => {
-        setResidentSort(e.target.value);
+    const handleDirectorySortChange = (e) => {
+        setDirectorySort(e.target.value);
         setCurrentPage(1);
     };
 
     const handleStaffRoleChange = (e) => {
         setStaffRoleFilter(e.target.value);
+        setCurrentPage(1);
+    };
+
+    const handleFilterChange = (e) => {
+        setVisitorFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
         setCurrentPage(1);
     };
 
@@ -276,28 +269,32 @@ const SuperadminDashboard = () => {
             `}</style>
             <div style={{ marginBottom: '2.5rem' }}>
                 <div style={{ overflow: 'hidden', borderRadius: '12px' }}>
-                    <div className="carousel-track" style={{ display: 'flex', gap: '1.5rem', width: 'max-content' }}>
+                    <div className="carousel-track" style={{ display: 'flex', width: 'max-content' }}>
                         {(() => {
                             const cardData = [
                                 {
-                                    key: 'users', label: 'Total Users', value: users.length, color: '#3b82f6', bgActive: '#f0f7ff', bgIcon: '#eff6ff', isActive: showUsersTable && activeDirectory === 'resident', icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
+                                    key: 'staff', label: 'Staff', value: users.filter(u => ['manager', 'superadmin', 'watchman', 'lifeguard'].includes(u.role)).length, color: '#6366f1', bgActive: '#eef2ff', bgIcon: '#e0e7ff', isActive: showUsersTable && activeDirectory === 'staff', icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>,
+                                    onClick: () => { const willShow = !(showUsersTable && activeDirectory === 'staff'); setShowUsersTable(willShow); if (willShow) { setActiveDirectory('staff'); setCurrentPage(1); setShowUnitsTable(false); setShowBookingsTable(false); setShowIncidentsTable(false); } }
+                                },
+                                {
+                                    key: 'residents', label: 'Residents', value: users.filter(u => u.role === 'resident').length, color: '#3b82f6', bgActive: '#f0f7ff', bgIcon: '#eff6ff', isActive: showUsersTable && activeDirectory === 'resident', icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
                                     onClick: () => { const willShow = !(showUsersTable && activeDirectory === 'resident'); setShowUsersTable(willShow); if (willShow) { setActiveDirectory('resident'); setCurrentPage(1); setShowUnitsTable(false); setShowBookingsTable(false); setShowIncidentsTable(false); } }
-                                },
-                                {
-                                    key: 'units', label: 'Registered Units', value: units.length, color: '#10b981', bgActive: '#f0fdf9', bgIcon: '#ecfdf5', isActive: showUnitsTable, icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
-                                    onClick: handleUnitsClick
-                                },
-                                {
-                                    key: 'bookings', label: 'Total Bookings', value: bookings.length, color: '#f59e0b', bgActive: '#fffdf5', bgIcon: '#fffbeb', isActive: showBookingsTable, icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
-                                    onClick: async () => { if (!showBookingsTable) { setShowBookingsTable(true); setShowUnitsTable(false); setShowUsersTable(false); setShowIncidentsTable(false); setBookingsTableLoading(true); try { const res = await api.get('/bookings'); setBookings(res.data); } catch (error) { console.error('Error fetching bookings', error); } finally { setBookingsTableLoading(false); } } else { setShowBookingsTable(false); } }
                                 },
                                 {
                                     key: 'visits', label: 'Total Visits', value: visits.length, color: '#8b5cf6', bgActive: '#faf5ff', bgIcon: '#f5f3ff', isActive: showUsersTable && activeDirectory === 'visitor', icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>,
                                     onClick: () => { const willShow = !(showUsersTable && activeDirectory === 'visitor'); setShowUsersTable(willShow); if (willShow) { setActiveDirectory('visitor'); setCurrentPage(1); setShowUnitsTable(false); setShowBookingsTable(false); setShowIncidentsTable(false); } }
                                 },
                                 {
+                                    key: 'bookings', label: 'Total Bookings', value: bookings.length, color: '#f59e0b', bgActive: '#fffdf5', bgIcon: '#fffbeb', isActive: showBookingsTable, icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
+                                    onClick: async () => { if (!showBookingsTable) { setShowBookingsTable(true); setShowUnitsTable(false); setShowUsersTable(false); setShowIncidentsTable(false); setBookingsTableLoading(true); try { const res = await api.get('/bookings'); setBookings(res.data); } catch (error) { console.error('Error fetching bookings', error); } finally { setBookingsTableLoading(false); } } else { setShowBookingsTable(false); } }
+                                },
+                                {
                                     key: 'incidents', label: 'Incidents', value: incidents.length, color: '#ef4444', bgActive: '#fff5f5', bgIcon: '#fef2f2', isActive: showIncidentsTable, icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>,
                                     onClick: async () => { if (!showIncidentsTable) { setShowIncidentsTable(true); setShowUnitsTable(false); setShowUsersTable(false); setShowBookingsTable(false); setIncidentsTableLoading(true); try { const res = await api.get('/incidents'); setIncidents(res.data); } catch (error) { console.error('Error fetching incidents', error); } finally { setIncidentsTableLoading(false); } } else { setShowIncidentsTable(false); } }
+                                },
+                                {
+                                    key: 'units', label: 'Registered Units', value: units.length, color: '#10b981', bgActive: '#f0fdf9', bgIcon: '#ecfdf5', isActive: showUnitsTable, icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
+                                    onClick: handleUnitsClick
                                 }
                             ];
                             const allCards = [...cardData, ...cardData];
@@ -305,7 +302,7 @@ const SuperadminDashboard = () => {
                                 <div
                                     key={`${card.key}-${idx}`}
                                     onClick={card.onClick}
-                                    style={{ minWidth: '300px', padding: '1.5rem', backgroundColor: card.isActive ? card.bgActive : 'white', borderRadius: '12px', borderTop: card.isActive ? `2px solid ${card.color}` : '2px solid #e2e8f0', borderRight: card.isActive ? `2px solid ${card.color}` : '2px solid #e2e8f0', borderBottom: card.isActive ? `2px solid ${card.color}` : '2px solid #e2e8f0', borderLeft: `4px solid ${card.color}`, boxShadow: card.isActive ? `0 8px 16px -2px ${card.color}33` : '0 4px 6px -1px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'box-shadow 0.2s, background-color 0.2s, border-color 0.2s', cursor: 'pointer', flexShrink: 0 }}
+                                    style={{ minWidth: '300px', marginRight: '1.5rem', padding: '1.5rem', backgroundColor: card.isActive ? card.bgActive : 'white', borderRadius: '12px', borderTop: card.isActive ? `2px solid ${card.color}` : '2px solid #e2e8f0', borderRight: card.isActive ? `2px solid ${card.color}` : '2px solid #e2e8f0', borderBottom: card.isActive ? `2px solid ${card.color}` : '2px solid #e2e8f0', borderLeft: `4px solid ${card.color}`, boxShadow: card.isActive ? `0 8px 16px -2px ${card.color}33` : '0 4px 6px -1px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'box-shadow 0.2s, background-color 0.2s, border-color 0.2s', cursor: 'pointer', flexShrink: 0 }}
                                 >
                                     <div>
                                         <p style={{ margin: '0 0 0.5rem 0', color: '#64748b', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.label}</p>
@@ -768,36 +765,19 @@ const SuperadminDashboard = () => {
                                 </button>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
-                                {activeDirectory === 'visitor' && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '150px', maxWidth: '250px' }}>
-                                        <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Sort by:</span>
-                                        <select
-                                            value={visitorSort}
-                                            onChange={handleSortChange}
-                                            style={{ width: '100%', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', color: '#334155', outline: 'none', cursor: 'pointer', backgroundColor: '#f8fafc' }}
-                                        >
-                                            <option value="newest">Newest First</option>
-                                            <option value="oldest">Oldest First</option>
-                                            <option value="a-z">Name (A-Z)</option>
-                                            <option value="z-a">Name (Z-A)</option>
-                                        </select>
-                                    </div>
-                                )}
-                                {activeDirectory === 'resident' && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '150px', maxWidth: '250px' }}>
-                                        <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Sort by:</span>
-                                        <select
-                                            value={residentSort}
-                                            onChange={handleResidentSortChange}
-                                            style={{ width: '100%', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', color: '#334155', outline: 'none', cursor: 'pointer', backgroundColor: '#f8fafc' }}
-                                        >
-                                            <option value="a-z">Name (A-Z)</option>
-                                            <option value="z-a">Name (Z-A)</option>
-                                            <option value="newest">Newest Registered</option>
-                                            <option value="oldest">Oldest Registered</option>
-                                        </select>
-                                    </div>
-                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '150px', maxWidth: '250px' }}>
+                                    <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Sort by:</span>
+                                    <select
+                                        value={directorySort}
+                                        onChange={handleDirectorySortChange}
+                                        style={{ width: '100%', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', color: '#334155', outline: 'none', cursor: 'pointer', backgroundColor: '#f8fafc' }}
+                                    >
+                                        <option value="a-z">Name (A-Z)</option>
+                                        <option value="z-a">Name (Z-A)</option>
+                                        <option value="newest">Newest</option>
+                                        <option value="oldest">Oldest</option>
+                                    </select>
+                                </div>
 
                                 {/* Global Directory Search Bar */}
                                 <div style={{ position: 'relative', flex: 2, minWidth: '200px', maxWidth: '300px' }}>
