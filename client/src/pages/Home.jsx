@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Carousel from '../components/Carousel';
 
@@ -15,6 +15,51 @@ import tennisImg from '../assets/tennis_courts.png';
 import trailImg from '../assets/walking_trail.png';
 
 const Home = () => {
+    const CARD_WIDTH = 340;
+    const CARD_MARGIN = 24;
+    const CARD_TOTAL = CARD_WIDTH + CARD_MARGIN;
+    const PAUSE_MS = 5000;
+    const SLIDE_MS = 600;
+
+    const testimonials = [
+        { name: 'María González', unit: 'Townhouse – Block A', initials: 'MG', rating: 5, quote: 'Living here has been a dream. The community events, the gardens, the pool — everything is immaculate. My kids love it and I feel completely safe.' },
+        { name: 'Carlos Ramírez', unit: '2-Bedroom Apt – Block C', initials: 'CR', rating: 5, quote: 'The management team is incredibly responsive. Any request I submit gets handled within the day. This is what professional living looks like.' },
+        { name: 'Sofía Martínez', unit: 'Cabin – Block B', initials: 'SM', rating: 5, quote: 'I wake up every morning to stunning views and fresh air. The walking trails are the highlight of my day. I could not imagine a better place to live.' },
+        { name: 'Andrés Herrera', unit: '1-Bedroom Studio – Block D', initials: 'AH', rating: 4, quote: 'The security gate system gives me real peace of mind. Knowing that access is fully controlled makes working late stress-free.' },
+        { name: 'Lucía Fernández', unit: 'Townhouse – Block B', initials: 'LF', rating: 5, quote: 'The resort pool and tennis courts feel like a 5-star hotel. I have recommended Terrazas to three of my colleagues already. Zero regrets.' },
+    ];
+
+    const [activeIdx, setActiveIdx] = useState(0);
+    const [sliding, setSliding] = useState(false);
+    const trackRef = useRef(null);
+    const containerRef = useRef(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+
+    useEffect(() => {
+        const measure = () => {
+            if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
+        };
+        measure();
+        window.addEventListener('resize', measure);
+        return () => window.removeEventListener('resize', measure);
+    }, []);
+
+    useEffect(() => {
+        // Pause for PAUSE_MS, then kick off slide, then advance index
+        const pauseTimer = setTimeout(() => {
+            setSliding(true);
+            const slideTimer = setTimeout(() => {
+                setActiveIdx(prev => (prev + 1) % testimonials.length);
+                setSliding(false);
+            }, SLIDE_MS);
+            return () => clearTimeout(slideTimer);
+        }, PAUSE_MS);
+        return () => clearTimeout(pauseTimer);
+    }, [activeIdx]);
+
+    // offset = center of container - half card width - index * cardTotal
+    const offset = containerWidth / 2 - CARD_WIDTH / 2 - activeIdx * CARD_TOTAL;
+
     const slides = [
         { url: firstSlideImg, title: 'Welcome to Terrazas de Guacuco: Luxury Living in Harmony with Nature.' },
         { url: studioImg, title: 'Modern 1 Bedroom Apartment' },
@@ -116,6 +161,87 @@ const Home = () => {
                                 </div>
                             </div>
                         </Link>
+                    </div>
+                </div>
+
+                {/* Testimonials Section */}
+                <div style={{ marginTop: '5rem', marginBottom: '2rem' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                        <h2 style={{ fontSize: '2rem', color: 'var(--primary-color)', marginBottom: '0.75rem' }}>What Our Residents Say</h2>
+                        <p style={{ color: '#64748b', fontSize: '1.05rem', maxWidth: '550px', margin: '0 auto' }}>
+                            Real stories from the people who call Terrazas de Guacuco home.
+                        </p>
+                    </div>
+
+                    <div ref={containerRef} style={{ overflow: 'hidden', position: 'relative', padding: '1rem 0 1.5rem' }}>
+                        <div
+                            ref={trackRef}
+                            style={{
+                                display: 'flex',
+                                transform: `translateX(${offset}px)`,
+                                transition: sliding ? `transform ${SLIDE_MS}ms cubic-bezier(0.4, 0, 0.2, 1)` : 'none',
+                                willChange: 'transform',
+                            }}
+                        >
+                            {testimonials.map((t, i) => (
+                                <div
+                                    key={i}
+                                    style={{
+                                        width: `${CARD_WIDTH}px`,
+                                        maxWidth: `${CARD_WIDTH}px`,
+                                        marginRight: `${CARD_MARGIN}px`,
+                                        backgroundColor: 'white',
+                                        borderRadius: '16px',
+                                        padding: '2rem',
+                                        border: i === activeIdx ? '2px solid var(--primary-color, #3b82f6)' : '1px solid #e2e8f0',
+                                        boxShadow: i === activeIdx ? '0 8px 24px rgba(59,130,246,0.15)' : '0 4px 12px rgba(0,0,0,0.05)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '1.25rem',
+                                        flexShrink: 0,
+                                        transition: 'border 0.4s, box-shadow 0.4s, opacity 0.4s',
+                                        opacity: i === activeIdx ? 1 : 0.5,
+                                        transform: i === activeIdx ? 'scale(1.03)' : 'scale(1)',
+                                    }}
+                                >
+                                    {/* Stars */}
+                                    <div style={{ display: 'flex', gap: '3px' }}>
+                                        {[1, 2, 3, 4, 5].map(s => (
+                                            <svg key={s} width="18" height="18" viewBox="0 0 24 24" fill={s <= t.rating ? '#f59e0b' : '#e2e8f0'} xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                            </svg>
+                                        ))}
+                                    </div>
+
+                                    {/* Quote */}
+                                    <p style={{ color: '#475569', fontSize: '0.95rem', lineHeight: '1.75', margin: 0, fontStyle: 'italic' }}>
+                                        &ldquo;{t.quote}&rdquo;
+                                    </p>
+
+                                    {/* Author */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem', marginTop: 'auto' }}>
+                                        <div style={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: 'var(--primary-color, #3b82f6)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>
+                                            {t.initials}
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: 0, fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>{t.name}</p>
+                                            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.8rem' }}>{t.unit}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Dot indicators */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '1.25rem' }}>
+                        {testimonials.map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => { setSliding(false); setActiveIdx(i); }}
+                                style={{ width: i === activeIdx ? 24 : 8, height: 8, borderRadius: '999px', border: 'none', cursor: 'pointer', background: i === activeIdx ? 'var(--primary-color, #3b82f6)' : '#cbd5e1', padding: 0, transition: 'all 0.3s ease' }}
+                            />
+                        ))}
                     </div>
                 </div>
 

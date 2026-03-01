@@ -1,0 +1,295 @@
+﻿PROJECT: Terrazas de Guacuco — Residential Community Management Web App (Frontend Only)
+
+Build the complete React frontend for a gated residential community management system.
+All API calls are made to a backend REST API at http://localhost:5000/api.
+Use axios for all requests and store the JWT token in localStorage.
+Style with vanilla CSS only — no Tailwind, no CSS Modules.
+
+===========================================================================
+TECH STACK
+===========================================================================
+
+- React (Vite)
+- React Router v6
+- Axios (create a reusable `api` instance with baseURL and a request interceptor that automatically attaches the JWT token from localStorage as a Bearer Authorization header)
+- Context API for authentication state
+- Vanilla CSS (inline styles or a single global stylesheet)
+
+===========================================================================
+AUTH CONTEXT & ROUTING
+===========================================================================
+
+Create an AuthContext that provides:
+  - user: { id, name, email, role }
+  - token: string
+  - login(token, user) — saves to state and localStorage
+  - logout() — clears state and localStorage
+
+Routing (React Router v6):
+  - /login       → LoginPage (public)
+  - /dashboard   → Protected route, renders the correct dashboard based on user.role:
+      superadmin  → SuperadminDashboard
+      manager     → ManagerDashboard
+      watchman    → WatchmanDashboard
+      lifeguard   → LifeguardDashboard
+      resident    → ResidentDashboard
+      visitor     → VisitorDashboard
+  - Unauthenticated users redirect to /login
+
+===========================================================================
+LOGIN PAGE
+===========================================================================
+
+- Email and password form
+- On submit: POST /api/auth/login → receive { token, user } → save to AuthContext → redirect to /dashboard
+- Show inline error messages on failure
+- "Forgot Password" link: POST /api/auth/forgot-password → show a generic success message regardless of result
+- Premium, modern design: centered card layout, gradient background, smooth input focus animations
+
+===========================================================================
+SHARED LAYOUT
+===========================================================================
+
+A layout wrapper used by all dashboards:
+  - Top navigation bar: app name "Terrazas de Guacuco" on the left, current user name + role badge + Logout button on the right
+  - Dashboard content renders below the nav bar in a padded, max-width container
+
+===========================================================================
+SUPERADMIN DASHBOARD
+===========================================================================
+
+Title: "Superadmin Control Panel"
+
+--- STATS CAROUSEL ---
+
+A smooth, continuously auto-scrolling marquee:
+  - CSS @keyframes animation named `carouselScroll`: from translateX(0) to translateX(-50%), linear, infinite, approximately 30 seconds per cycle
+  - The card array is duplicated ([...cardData, ...cardData]) so the loop is invisible
+  - CRITICAL: apply marginRight to each card, do NOT use gap on the flex container. Using gap causes a visible glitch at the loop point because translateX(-50%) will not land on an exact card boundary.
+  - Wrap the track in an overflow:hidden container
+
+Cards displayed in this order:
+  1. Staff           — count users where role is superadmin, manager, watchman, or lifeguard
+  2. Residents       — count users where role is resident
+  3. Total Visits    — count all records from GET /api/visits
+  4. Total Bookings  — count all records from GET /api/bookings
+  5. Incidents       — count all records from GET /api/incidents
+  6. Registered Units — count all records from GET /api/units
+
+Each card:
+  - Fixed minimum width (e.g. 300px), consistent padding
+  - Left accent border (thicker than the other three sides)
+  - When its associated table/section is open: all borders highlight, background tints, box shadow appears
+  - Contains: label (small, uppercase) on top, large bold count below, icon in a box on the right side
+  - Clicking a card opens the corresponding table and highlights that card
+  - Only one table/section is visible at a time — opening one closes all others
+    - Staff card        → open Users table, activate Staff tab
+    - Residents card    → open Users table, activate Resident tab
+    - Total Visits card → open Users table, activate Visitor tab
+    - Total Bookings    → open Bookings table
+    - Incidents         → open Incidents table
+    - Registered Units  → open Units table
+
+--- UNITS TABLE ---
+
+Appears when Registered Units card is clicked.
+Fetch: GET /api/units
+
+Columns: ID | Unit Number | Type | Block | Status | Residents | Actions
+
+  - Status displayed as a pill badge: "available" or "occupied"
+  - Toggle button shown only on occupied units: "Mark Available"
+    → Opens a custom confirmation modal (NOT window.confirm)
+    → On confirm: PATCH /api/units/:id/status
+  - Filters: by status (All / Available / Occupied), by type (All / 1b1b / 2b2b / Townhouse / Cabin)
+  - Pagination: rows-per-page selector (10 / 25 / 50 / 100), prev/next buttons, "Page X of Y" label
+
+--- BOOKINGS TABLE ---
+
+Appears when Total Bookings card is clicked.
+Fetch: GET /api/bookings (re-fetch each time section opens)
+
+Columns: ID | Resident | Amenity | Date | Time | Guests
+
+  - Filter by amenity type
+  - Pagination with rows-per-page selector
+
+--- INCIDENTS TABLE ---
+
+Appears when Incidents card is clicked.
+Fetch: GET /api/incidents (re-fetch each time section opens)
+
+Columns: ID | Type | Location | Description | Status | Reported By | Date
+
+  - Description: truncate to ~60 characters with ellipsis
+  - Status displayed as a pill badge
+  - Reported By: resolve reporterId to user.name using the users array
+  - Filter by type (All / Maintenance / Security / Noise / Other)
+  - Filter by status (All / Open / In Progress / Resolved)
+  - Pagination with rows-per-page selector
+
+--- USER MANAGEMENT TABLE ---
+
+Appears when Staff, Residents, or Total Visits card is clicked.
+Fetch: GET /api/auth/users and GET /api/visits
+
+Three sub-tabs: Staff | Resident | Visitor
+
+All three tabs share the following UI (rendered once, not separately per tab):
+  - A single "Sort by" dropdown (always visible): Name (A–Z) | Name (Z–A) | Newest | Oldest
+      Staff and Resident: sort by name (string) / id (number)
+      Visitor: sort by visitorName (string) / createdAt (date)
+  - A search bar: searches by name for Staff/Resident, by visitorName for Visitor
+  - Pagination with rows-per-page selector (10 / 25 / 50 / 100)
+
+Staff tab:
+  - Data: users where role is one of: superadmin, manager, watchman, lifeguard
+  - Role filter radio buttons: All Staff | Superadmin | Manager | Watchman | Lifeguard
+  - Columns: ID | Name | Email | Role | Actions
+  - Inline row editing: name (text input), email (email input), role (select with all role options)
+      Save → PUT /api/auth/users/:id
+      Cancel → revert to display mode
+  - Delete button → custom confirmation modal → DELETE /api/auth/users/:id
+
+Resident tab:
+  - Data: users where role is resident
+  - Columns: ID | Name | Email | Unit (resolved from unitId via units array) | Role | Actions
+  - Inline editing: name, email
+  - Delete with custom confirmation modal
+
+Visitor tab:
+  - Data: records from the visits array (not users)
+  - Columns: ID | Visitor Name | ID Card | Plate | Status | Unit | Host | Date | Entry Time | Exit Time
+  - Status pill badges: expected / entered / exited
+  - Advanced filter panel: Status dropdown, Unit number text search, Start Date, End Date
+  - Entry Time: createdAt formatted as HH:MM
+  - Exit Time: exitTime formatted as HH:MM, or "N/A" if null
+
+Below the entire Users table (always visible when the section is open): render the AddUserForm component.
+
+--- CUSTOM MODALS ---
+
+Never use window.confirm or window.alert anywhere in the app.
+All confirmations use a custom modal:
+  - Semi-transparent backdrop covering the screen
+  - Centered modal card with message, Cancel button, and Confirm button
+  - Examples:
+      "Are you sure you want to delete [name]?"
+      "Are you sure you want to mark Unit [X] as Available?"
+
+--- ADD USER FORM ---
+
+A form rendered below the Users table.
+
+Fields in a responsive grid:
+  - Full Name * (text)
+  - Email Address * (email)
+  - Temporary Password * (password)
+  - Assigned Role * (select: Watchman | Lifeguard | Visitor | Resident | Manager)
+  - Unit — shown only when role is "resident" (required) or "visitor" (optional)
+  - Phone (optional, full width)
+  - Submit button
+
+On submit: POST /api/auth/register with { name, email, password, role, phone, unitNumber }
+(unitNumber is a string like "A-101", NOT a database ID — the backend resolves it)
+Show a success or error message below the form title.
+Reset all fields on success.
+
+===========================================================================
+MANAGER DASHBOARD
+===========================================================================
+
+Identical to the Superadmin Dashboard with the following differences:
+
+  1. Title: "Manager Control Panel"
+  2. Define: visibleUsers = users.filter(u => u.role !== 'superadmin' && u.role !== 'manager')
+  3. Staff card count: visibleUsers filtered to watchman and lifeguard only
+  4. Residents card count: visibleUsers filtered to resident
+  5. Staff directory tab: shows only watchman and lifeguard users
+  6. Staff role filter radio buttons: All Staff | Watchman | Lifeguard (no Superadmin, no Manager)
+  7. Inline role edit dropdown: manager | watchman | lifeguard | resident | visitor (no superadmin)
+  8. Loading text: "Loading Manager System..."
+
+===========================================================================
+WATCHMAN DASHBOARD
+===========================================================================
+
+Title: "Security Gate"
+
+  - Active visits panel: GET /api/visits, show visits with status "expected" or "entered"
+  - Mark as Entered button (expected → entered): PATCH /api/visits/:id/status
+  - Mark as Exited button (entered → exited): PATCH /api/visits/:id/status (backend sets exitTime)
+  - Search by visitor name or unit number
+  - Walk-in visitor form:
+      Fields: Visitor Name*, ID Card*, Plate (optional), Unit*, Host (select from residents)
+      POST /api/visits
+
+===========================================================================
+LIFEGUARD DASHBOARD
+===========================================================================
+
+Title: "Amenities & Bookings"
+
+  - Today's bookings: GET /api/bookings, filter to today's date
+  - Upcoming bookings: filter to future dates
+  - Amenity filter dropdown
+  - View-only table: ID | Resident Name | Amenity | Date | Time | Guests
+
+===========================================================================
+RESIDENT DASHBOARD
+===========================================================================
+
+Title: "Welcome, [name]"
+
+Sections:
+  1. My Unit — show unit number, type, block from GET /api/units filtered by user.unitId
+  2. Book an Amenity — form: amenity (select), date, time, guests → POST /api/bookings
+  3. My Bookings — GET /api/bookings filtered by userId = current user
+  4. Pre-Register a Visitor — form: visitor name, ID card, plate (optional), date of visit → POST /api/visits
+  5. My Visitors — GET /api/visits filtered by hostId = current user
+  6. Report an Incident — form: type (select), location, description → POST /api/incidents
+  7. My Incidents — GET /api/incidents filtered by reporterId = current user
+  8. Community Board — GET /api/blog, display posts (title, content, author, date)
+
+===========================================================================
+VISITOR DASHBOARD
+===========================================================================
+
+Title: "Your Visit Status"
+
+  - Fetch visit record for the current user
+  - Display: status badge, unit being visited, host name, entry time, exit time
+
+===========================================================================
+UI/UX DESIGN REQUIREMENTS
+===========================================================================
+
+  - Premium, modern, professional aesthetic — should look polished on first glance
+  - Dark navigation bar, clean white card content areas
+  - Status values displayed as pill/badge shapes
+  - Tables: comfortable padding, subtle row hover highlight, clean borders
+  - Inputs and selects: rounded corners, visible focus state, consistent padding
+  - Buttons: solid fill, hover darkens, rounded corners, pointer cursor
+  - Smooth transitions on hover states and interactive elements (0.2s ease)
+  - Responsive layout for desktop and tablet
+  - Stats card layout: label above, large number below, icon in a box on the right
+  - Font: Inter or a similar modern sans-serif loaded via Google Fonts
+
+===========================================================================
+KEY IMPLEMENTATION NOTES
+===========================================================================
+
+  1. Carousel loop fix: Use marginRight on each card — NOT gap on the container.
+     With gap, translateX(-50%) does not land at an exact card boundary, causing a visible jump at the loop point.
+
+  2. Unified sort state: All three user directory tabs (Staff, Resident, Visitor) share ONE sort state variable and ONE Sort By dropdown. Do not render three separate conditional dropdowns.
+
+  3. Mutual exclusion: Only one table/section is visible at a time. When any section opens, explicitly set all other section visibility states to false.
+
+  4. Visitor filters have their own separate state object (status, unit, startDate, endDate) independent from the shared sort state.
+
+  5. Bookings and Incidents tables should re-fetch data from the API each time their section is opened, not rely solely on the initial page load data.
+
+  6. Never use window.confirm or window.alert. All confirmations must use custom styled modal dialogs.
+
+  7. The Add User Form sends unitNumber (e.g. "A-101") to the backend — never send a unit database ID from the frontend.

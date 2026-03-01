@@ -1,0 +1,273 @@
+PROJECT TITLE: Terrazas de Guacuco — Residential Community Management Web App
+
+===========================================================================
+PROJECT OVERVIEW
+===========================================================================
+
+Build a full-stack web application for managing a gated residential community called "Terrazas de Guacuco". The app has a React frontend (Vite) and a Node.js/Express backend with a Sequelize ORM connected to a SQL database. The app supports multiple user roles, each with their own dashboard and set of permissions.
+
+===========================================================================
+TECH STACK
+===========================================================================
+
+Frontend:
+- React (Vite)
+- Vanilla CSS (no Tailwind)
+- React Router for navigation
+- Axios for API calls (aliased as `api` via a service file)
+- Context API for auth state (AuthContext)
+
+Backend:
+- Node.js + Express
+- Sequelize ORM
+- JWT authentication (jsonwebtoken)
+- REST API
+
+===========================================================================
+USER ROLES & ACCESS
+===========================================================================
+
+1. Superadmin  — full access to everything
+2. Manager     — same as superadmin EXCEPT: cannot view/manage superadmin or other manager accounts
+3. Watchman    — security gate access (log visits, manage visitor entries)
+4. Lifeguard   — amenity/booking oversight
+5. Resident    — can book amenities, view their unit, report incidents, pre-register visitors
+6. Visitor     — read-only (view visit status)
+
+===========================================================================
+DATABASE SCHEMA (6 tables)
+===========================================================================
+
+Users:
+  - id (PK), name, email (unique), password, role (enum: superadmin | manager | watchman | lifeguard | resident | visitor), phone (nullable), unitId (FK -> Units, nullable)
+
+Units:
+  - id (PK), number (unique, e.g. "A-101"), type (enum: 1b1b | 2b2b | townhouse | cabin), block (string)
+  - status (enum: available | occupied) — togglable by admins (can only go from occupied -> available; marking occupied requires assigning a resident)
+
+Visits:
+  - id (PK), visitorName, visitorIdCard, plateNumber (nullable), status (enum: expected | entered | exited), exitTime (nullable), unitId (FK -> Units), hostId (FK -> Users)
+
+Incidents:
+  - id (PK), type (enum: maintenance | security | noise | other), location, description, status (enum: open | in_progress | resolved), reporterId (FK -> Users)
+
+Bookings:
+  - id (PK), amenity (enum: community_center | resort_pool | tennis_court | multi_purpose_facility | ...), facilitySport (nullable), guests, date, time, userId (FK -> Users)
+
+BlogPosts:
+  - id (PK), title, content, imageUrl (nullable), authorId (FK -> Users)
+
+===========================================================================
+AUTHENTICATION
+===========================================================================
+
+- JWT-based login. Token stored in localStorage.
+- AuthContext provides `user` (id, name, role) and `token` to the whole app.
+- Protected routes redirect to login if unauthenticated.
+- Role-based routing: each role lands on its own dashboard component.
+- Forgot password flow (simulated — backend always returns a generic success message for security).
+
+===========================================================================
+USER REGISTRATION (AddUserForm component)
+===========================================================================
+
+- Fields: Full Name*, Email*, Temporary Password*, Assigned Role*, Phone (optional), Unit (conditional)
+- Unit field appears only when role is "resident" or "visitor":
+    - Resident: Unit field is REQUIRED
+    - Visitor: Unit field is OPTIONAL
+- Unit input accepts a unit number string (e.g. "A-101"); the backend looks it up by number and assigns the unitId FK automatically.
+- On the backend, the register endpoint accepts: name, email, password, role, phone, unitNumber. It resolves unitNumber to unit.id via a DB lookup.
+- Superadmin can also assign the "Manager" role; other admins cannot.
+
+===========================================================================
+SUPERADMIN DASHBOARD
+===========================================================================
+
+Header: "Superadmin Control Panel"
+
+--- STATS CAROUSEL ---
+A smooth, continuously auto-scrolling marquee carousel (CSS @keyframes animation, linear, infinite). Cards are duplicated to enable seamless looping — spacing uses marginRight (NOT gap) on each card to ensure translateX(-50%) lands on an exact card boundary and avoids any loop glitch.
+
+Card order (left to right):
+  1. Staff        — count of watchmen + lifeguards + managers + superadmins (indigo #6366f1)
+  2. Residents    — count of users with role=resident (blue #3b82f6)
+  3. Total Visits — count of all visits (purple #8b5cf6)
+  4. Total Bookings — count of all bookings (amber #f59e0b)
+  5. Incidents    — count of all incidents (red #ef4444)
+  6. Registered Units — count of all units (green #10b981)
+
+Each card:
+- Has a left color accent border (4px)
+- Highlights with a colored background + shadow when its associated table/directory is open
+- Is clickable to open its respective table/section below
+- Staff card opens the Users table with the Staff tab active
+- Residents card opens the Users table with the Resident tab active
+- Total Visits card opens the Users table with the Visitor tab active
+- Total Bookings opens the Bookings table
+- Incidents opens the Incidents table
+- Registered Units opens the Units table
+- Only one table can be visible at a time (mutual exclusion)
+
+--- UNITS TABLE ---
+Shown when Registered Units card is clicked.
+Columns: ID, Unit Number, Type, Block, Status, Residents, Actions
+- Status badge: green for "available", orange for "occupied"
+- Toggle button: only visible on "occupied" units (to mark as available)
+  - Uses a custom styled confirmation modal (NOT window.confirm) before toggling
+  - Modal text: "Are you sure you want to mark Unit [X] as Available?"
+- Filters: by status (all / available / occupied), by unit type (all / 1b1b / 2b2b / townhouse / cabin)
+- Pagination with rows-per-page selector (10 / 25 / 50 / 100)
+- Loading state while fetching
+
+--- BOOKINGS TABLE ---
+Shown when Total Bookings card clicked.
+Columns: ID, Resident, Amenity, Date, Time, Guests
+- Filter by amenity type
+- Pagination with rows-per-page selector
+- Loading state
+
+--- INCIDENTS TABLE ---
+Shown when Incidents card clicked.
+Columns: ID, Type, Location, Description (truncated with ellipsis), Status (color-coded badge), Reported By (resolved from user data), Date
+- Filter by type (all / maintenance / security / noise / other)
+- Filter by status (all / open / in_progress / resolved)
+- Pagination with rows-per-page selector (10 / 25 / 50 / 100)
+- Loading state
+
+--- USER MANAGEMENT TABLE ---
+Shown when Staff, Residents, or Total Visits card is clicked.
+Has three sub-tabs: Staff | Resident | Visitor
+
+Common to all tabs:
+- A unified "Sort by" dropdown always visible: Name (A-Z) | Name (Z-A) | Newest | Oldest
+  (Visitor sorts by visitorName/createdAt; Staff+Resident sort by name/id)
+- Global search bar (searches by name / visitorName)
+- Shared state: single `directorySort` state, single handler, rendered once (not 3 separate dropdowns)
+
+Staff tab:
+- Shows users with roles: superadmin, manager, watchman, lifeguard
+- Role filter radio buttons: All Staff | Manager | Superadmin | Watchman | Lifeguard
+- Columns: ID, Name, Email, Role (editable inline), Actions (Edit / Delete)
+- Inline editing: name, email, role dropdown (all roles), save/cancel buttons
+- Delete: opens a custom confirmation modal
+
+Resident tab:
+- Shows users with role=resident
+- Columns: ID, Name, Email, Unit (resolved from unitId), Role, Actions (Edit / Delete)
+- Inline editing: name, email
+
+Visitor tab:
+- Reads from Visits table (not Users)
+- Columns: ID, Visitor Name, ID Card, Plate, Status, Unit (resolved), Host, Date, Entry Time, Exit Time
+- Advanced filters panel: Status, Unit number text search, Start Date, End Date
+- Pagination
+
+All tabs:
+- Pagination with rows-per-page selector (10 / 25 / 50 / 100)
+- Add User form (AddUserForm component) at the bottom, always visible when Users table is shown
+
+Custom modals (replacing all window.confirm / window.alert):
+- Delete user confirmation modal
+- Unit status toggle confirmation modal
+- Styled with backdrop, centered card, confirm/cancel buttons
+
+===========================================================================
+MANAGER DASHBOARD
+===========================================================================
+
+Identical to Superadmin Dashboard EXCEPT:
+
+1. Title: "Manager Control Panel"
+2. Users filtered with `visibleUsers = users.filter(u => u.role !== 'superadmin' && u.role !== 'manager')`
+3. Staff card count: only watchmen + lifeguards (no managers or superadmins)
+4. Residents card count: uses visibleUsers
+5. Staff directory (table) shows ONLY watchmen and lifeguards
+6. Staff role filter radio buttons: All Staff | Watchman | Lifeguard (no Manager option)
+7. Inline role edit dropdown: manager | watchman | lifeguard | resident | visitor (no superadmin option)
+8. Loading text: "Loading Manager System..."
+
+===========================================================================
+OTHER DASHBOARDS (placeholders / to be expanded)
+===========================================================================
+
+WatchmanDashboard:
+- Log new visitor entries
+- View and update visit status (expected -> entered -> exited)
+- Quick search by visitor name or unit
+
+LifeguardDashboard:
+- View upcoming bookings for amenities
+- Confirm or flag bookings
+
+ResidentDashboard:
+- View own unit details
+- Book amenities (form: amenity, date, time, guests)
+- Pre-register visitors (creates a Visit record with status=expected)
+- Report incidents (form: type, location, description)
+- View community blog posts
+
+VisitorDashboard:
+- View their own visit status
+
+===========================================================================
+UI/UX DESIGN PRINCIPLES
+===========================================================================
+
+- Modern, premium design with rich aesthetics
+- Color palette: primary blue (#3b82f6), with per-card accent colors
+- Card stats with color-coded left borders and icon badges
+- Smooth CSS transitions on hover, active states, and tab changes
+- Responsive grid layouts for tables and filters
+- Active card highlights with shadow and background tint
+- Badges for statuses (green = active/available, orange = occupied, red = open/incident, etc.)
+- All confirm/alert dialogs replaced with custom modals (no native browser dialogs)
+- Tables: alternating row hover highlight, padding, clean borders
+- Pagination controls: prev/next buttons + page number display + rows-per-page selector
+
+===========================================================================
+API ENDPOINTS (Backend)
+===========================================================================
+
+Auth:
+  POST   /api/auth/register       — create new user (accepts unitNumber, resolves to unitId)
+  POST   /api/auth/login          — returns JWT token
+  GET    /api/auth/users          — get all users (excludes password)
+  DELETE /api/auth/users/:id      — delete user
+  PUT    /api/auth/users/:id      — update user (name, email, role, phone)
+  POST   /api/auth/forgot-password
+
+Units:
+  GET    /api/units               — get all units (with associated residents)
+  PATCH  /api/units/:id/status   — toggle unit status (occupied -> available only)
+
+Visits:
+  GET    /api/visits              — get all visits
+  POST   /api/visits              — create visit
+
+Bookings:
+  GET    /api/bookings            — get all bookings
+  POST   /api/bookings            — create booking
+
+Incidents:
+  GET    /api/incidents           — get all incidents
+  POST   /api/incidents           — create incident
+
+Blog:
+  GET    /api/blog                — get all posts
+  POST   /api/blog                — create post
+
+===========================================================================
+KEY IMPLEMENTATION NOTES
+===========================================================================
+
+1. Carousel loop fix: Use `marginRight` on cards (not `gap` on container) so that translateX(-50%) lands at exactly the midpoint with no pixel rounding glitch.
+
+2. Directoy sort consolidation: All three user directory tabs (Staff, Resident, Visitor) share a single `directorySort` state and one Sort By dropdown — it doesn't re-render three dropdowns conditionally, just one always-visible one.
+
+3. Mutual exclusion: Opening any table closes all others (setShowUnitsTable, setShowBookingsTable, setShowIncidentsTable, setShowUsersTable all reset to false before showing the new one).
+
+4. Visitor filter: the visitor panel has its own advanced filter state (`visitorFilters: { status, unit, startDate, endDate }`) separate from the sort state.
+
+5. AddUserForm: The `unitNumber` field is sent to the backend which performs the lookup. The frontend never sends a raw unitId.
+
+6. Manager restrictions are applied at the frontend filter level (visibleUsers), AND at the staff role filter (only watchman/lifeguard shown), AND in the inline edit dropdown (no superadmin option).
